@@ -1,0 +1,209 @@
+\documentclass[10pt,a4paper,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{stmaryrd}
+\usepackage{comment}
+\usepackage{cmll}
+\usepackage{mathrsfs}
+\usepackage{hyperref}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage{proof}
+\usepackage{tikz}
+\usepackage{multicol}
+
+\makeatletter
+\newcommand{\dotminus}{\mathbin{\text{\@dotminus}}}
+
+\newcommand{\@dotminus}{%
+  \ooalign{\hidewidth\raise1ex\hbox{.}\hidewidth\cr$\m@th-$\cr}%
+}
+\makeatother
+
+\usetikzlibrary{arrows,backgrounds,patterns,matrix,shapes,fit,calc,shadows,plotmarks}
+
+\newtheorem{definition}{Определение}
+\begin{document}
+
+\begin{center}{\Large\textsc{\textbf{Теоретические домашние задания}}}\\
+             \it Теория типов, ИТМО, М3232-М3239, весна 2026 года\end{center}
+
+\section*{Домашнее задание №1: лямбда исчисление --- бестиповое и просто-типизированное}
+
+
+Для проверки и демонстрации заданий используйте какой-нибудь эмулятор лямбда-исчисления,
+например LCI: \url{https://www.chatzi.org/lci/}
+
+\begin{enumerate}
+
+\item Постройте лямбда выражения:
+\begin{enumerate}
+\item деление чёрчевского нумерала на 3.
+\item ограниченное вычитание 1 (указание: воспользуйтесь упорядоченными парами).
+\item целочисленное деление.
+\end{enumerate}
+
+\item На лекции был приведён комбинатор неподвижной точки $Y := \lambda f.(\lambda x.f\ (x\ x))\ (\lambda x.f\ (x\ x))$, обладающий свойством
+$Y\ P =_\beta P\ (Y\ P)$ для любого терма $P$. С его помощью оказывается возможным реализовывать рекурсию.
+
+Например, зададим функцию, возводящую 2 в соответствующую степень: $$P := \lambda f.\lambda x.(IsZero\ x)\ 1\ ((f\ (Dec\ x)) \cdot 2)$$
+Сравните это с кодом на Си: 
+\begin{center}\verb!unsigned f (unsigned x) { return x == 0 ? 1 : f (x-1) * 2; }!\end{center}
+Тогда, вызванная как $Y\ P\ x$, эта функция вычислит $2^x$. Например, $Y\ P\ 1 =_\beta$
+
+\vspace{-0.3cm}
+$$\begin{array}{l}=_\beta P\ (Y\ P)\ 1 = (\lambda f.\lambda x.(IsZero\ x)\ 1\ ((f (Dec\ x))\cdot 2)))\ (Y\ P)\ 1 \\
+  =_\beta (IsZero\ 1)\ 1\ ((Y\ P\ (Dec\ 1)) \cdot 2))) =_\beta (Y\ P\ 0) \cdot 2 \\
+  =_\beta (P\ (Y\ P)\ 0) \cdot 2 \\
+  =_\beta (IsZero\ 0)\ 1\ ((Y\ P\ (Dec\ 0)) \cdot 2))) \cdot 2\\
+  =_\beta 1 \cdot 2 =_\beta 2\end{array}$$
+
+С помощью $Y$-комбинатора реализуйте:
+\begin{enumerate}
+\item Вычисление $k$-го простого числа.
+\item Частичный логарифм.
+\item Предложите три других комбинатора неподвижной точки (других --- то есть, не бета-экви\-ва\-лент\-ных $Y$ и между собой).
+\end{enumerate}
+
+\item Напомним, что список может быть задан с помощью алгебраического типа с двумя конструкторами, \verb!Nil! и \verb!Cons!
+(см. доказательство неразрешимости исчисления предикатов). С учётом этого знания, и с учётом представления 
+алгебраических типов, приведённого на лекции, реализуйте следующие конструкции:
+\begin{enumerate}
+\item Функцию, вычисляющую длину списка.
+\item Функцию высшего порядка \verb!map2! --- последовательно применяет функцию к головам двух списков, возвращая список результатов:
+\verb!map2 (*) [1;3] [2;4]! вернёт \verb![2;12]!.
+\item Функцию \verb!rev!, возвращающую перевёрнутый список. Например, $\text{rev}[1,3,5] = [5,3,1]$.
+\end{enumerate}
+
+
+\item Покажите, что для чёрчевских нумералов $\overline{\lambda a.\lambda b.b\ a} =_\beta \overline{a^b}$.
+
+\item Бесконечное количество комбинаторов неподвижной точки. Дадим следующие определения
+$$\begin{array}{l}
+L := \lambda abcdefghijklmnopqstuvwxyzr.r(thisisafixedpointcombinator)\\
+R := LLLLLLLLLLLLLLLLLLLLLLLLLL\end{array}$$
+В данном определении терм $R$ является комбинатором неподвижной точки: каков бы ни был терм
+$F$, выполнено $R\ F =_\beta F\ (R\ F)$.
+\begin{enumerate}
+\item Докажите, что данный комбинатор --- действительно комбинатор неподвижной точки.
+\item Пусть в качестве имён переменных разрешены русские буквы. Постройте аналогичное выражение
+по-русски: с 32 параметрами и осмысленной русской фразой в терме $L$; покажите, что оно является
+комбинатором неподвижной точки.
+\end{enumerate}
+
+\item Найдите необитаемый тип в просто-типизированном лямбда-исчислении (напомним: тип $\tau$ 
+называется необитаемым, если ни для какого $P$ не выполнено $\vdash P : \tau$).
+
+\begin{comment}
+\item Напомним определение: комбинатор --- лямбда-выражение без свободных переменных. Также напомним:
+$$\begin{array}{l}
+S := \lambda x.\lambda y.\lambda z.x\ z\ (y\ z)\\
+K := \lambda x.\lambda y.x\\
+I := \lambda x.x
+\end{array}$$
+
+Известна теорема о том, что для любого комбинатора $X$ можно найти выражение $P$
+(состоящее только из скобок, пробелов и комбинаторов $S$ и $K$), что $X =_\beta P$.
+Будем говорить, что комбинатор $P$ \emph{выражает} комбинатор $X$ в базисе $SK$.
+
+Косвенным аргументом (пояснением, но не доказательством!) в пользу этой теоремы являются 
+два следующих соображения:
+\begin{itemize}
+\item теорема о замкнутости ИфИИВ: если $\vdash \varphi$, то $\vdash_\rightarrow \varphi$,
+значит, если выражение имеет тип, то этот тип можно получить с помощью доказательства в
+стиле Гильберта;
+\item типы комбинаторов $S$ и $K$ --- это, соответственно, вторая и первая схемы аксиом.
+\end{itemize}
+
+Докажите тип следующих выражений как логическое высказывание с помощью
+гильбертового вывода и, пользуясь этим доказательством как источником вдохновения, 
+выразите комбинаторы в базисе $SK$:
+\begin{enumerate}
+\item $\lambda x.\lambda y.\lambda z.y$
+\item $\lambda x.\lambda y.\lambda z.y x z$
+\item $\overline{1}$
+\item $Not$
+\item $Xor$
+\item $InR$
+\end{enumerate}
+\end{comment}
+
+\item Сформулируем определение бета-редукции на языке пред-лямбда-термов. $A \rightarrow_\beta B$, если:
+\begin{itemize}
+\item $A \equiv (\lambda x.P)\ Q$, $B \equiv P\ [x := Q]$, при условии свободы для подстановки;
+\item $A \equiv (P\ Q)$, $B \equiv (P'\ Q')$, при этом $P \rightarrow_\beta P'$ и $Q = Q'$, либо $P = P'$ и $Q \rightarrow_\beta Q'$;
+\item $A \equiv (\lambda x.P)$, $B \equiv (\lambda x.P')$, и $P \rightarrow_\beta P'$.
+\end{itemize}
+
+\begin{enumerate}
+\item Найдите лямбда-выражение, бета-редукция которого не может быть произведена из-за нарушения
+правила свободы для подстановки (для продолжения редукции потребуется производить переименование
+связанных переменных). Поясните, какое ожидаемое ценное свойство будет нарушено, если ограничение
+правила проигнорировать.
+\item Покажите, что недостаточно наложить требования на исходное выражение, и свобода для подстановки
+может быть нарушена уже в процессе редукции исходно полностью корректного лямбда-выражения.
+\end{enumerate}
+
+\begin{comment}
+\item Будем говорить, что выражение $A$ находится в \emph{слабой заголовочной нормальной форме} (WHNF),
+если оно не имеет вид $A \equiv (\lambda x.P)\ Q$ (то есть, самый верхний терм его не является редексом).
+Выражение находится в \emph{заголовочной нормальной форме} (HNF), когда его верхний терм --- не редекс и не лямбда-абстракция
+с бета-редексами в теле.
+\begin{enumerate}
+\item Приведите нормальным порядком редукции выражение $2\ 2$ в СЗНФ.
+\item Приведите нормальным порядком редукции выражение $Y\ (\lambda f.\lambda x.(IsZero\ x)\ 1\ (x \cdot f(x-1)))\ 3$ в СЗНФ.
+\item Верно ли, что <<нормальность>> формы выражения может в процессе редукции только усиливаться
+(никакая --- слабая заголовочная Н.Ф. --- заголовочная Н.Ф. --- нормальная форма)?
+\end{enumerate}
+\end{comment}
+
+%\item Две задачи на вычисление СЗНФ при помощи нормального порядка редукции.
+%
+%\begin{enumerate}
+%\item Постройте функцию прибавления 1 к значениям из списка в лямбда-исчислении:\\ \verb!let plus1 l = map (fun x -> x+1) l!.
+%Постройте бесконечный список из нечётных чисел \verb![1,3,..]!. Примените функцию \verb!plus1! к списку и получите результат
+%в СЗНФ.
+%
+%\item Напишите функцию вычисления суммы первых двух элементов списка:\\
+%\verb!let compute (l1::l2::ls) = (l1+l2, ls)!, примените её к результату предыдущего пункта,
+%получите результат в СЗНФ.
+%\end{enumerate}
+
+\item Как мы уже разбирали, $\not\vdash x\ x:\tau$ в силу дополнительных ограничений
+правила
+$$\infer[x \notin FV(\Gamma)]{\Gamma, x:\tau\vdash x:\tau}{}$$
+
+Найдите лямбда-выражение $N$, что $\not\vdash N:\tau$ в силу ограничений правила
+$$\infer[x \notin FV(\Gamma)]{\Gamma \vdash \lambda x.N:\sigma\to\tau}{\Gamma, x:\sigma \vdash N:\tau}$$
+
+%\item Верно ли, что $S = B(BW)(BBC)$? Если нет, то как правильно?
+
+\item Рассмотрим подробнее отличия исчисления по Чёрчу и по Карри. 
+Определим точно бета-редукцию в исчислении по Чёрчу: $A \rightarrow_\beta B$, если
+
+\begin{tabular}{ll}
+$A = (\lambda x^\sigma.P)\ Q$, & $B = P [x := Q]$\\
+$A = P\ Q$, & $B = P\ Q'$ или $B = P'\ Q$ при $P \rightarrow_\beta P'$ и $Q \rightarrow_\beta Q'$\\
+$A = \lambda x^\sigma.P$, & $B = \lambda x^\sigma.P'$ при $P \rightarrow_\beta P'$
+\end{tabular}
+
+\begin{enumerate}
+\item Покажите, что в исчислении по Карри не выполняется свойство расширения типизации
+(subject expansion) даже в такой формулировке: 
+если $\vdash_\text{к} M:\sigma$, $M \twoheadrightarrow_\beta N$ и $\vdash_\text{к} N:\tau$,
+то необязательно, что $\sigma=\tau$.
+\item Покажите, что в исчислении по Чёрчу свойство расширения типизации в такой формулировке также не выполняется:
+
+\begin{center}найдутся такие $M,N,\sigma$, что $\vdash_\text{ч} N:\sigma$, $M\twoheadrightarrow_\beta N$, но $\not\vdash_\text{ч} M:\sigma$.\end{center}
+
+Но при этом в исчислении по Чёрчу выполнено свойство расширения типизации в такой формулировке:
+
+\begin{center}если $\vdash_\text{к} M:\sigma$, $M \twoheadrightarrow_\beta N$ и $\vdash_\text{к} N:\tau$,
+то тогда $\sigma=\tau$.\end{center}
+\end{enumerate}
+\end{enumerate}
+
+\end{document}
