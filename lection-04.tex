@@ -1,0 +1,477 @@
+\documentclass[aspectratio=169]{beamer}
+\setbeamertemplate{navigation symbols}{}
+\usepackage{graphicx}
+\usepackage{stmaryrd}
+\usepackage[T1,T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{makeidx}
+\usepackage{verbatim}
+\usepackage{amsthm}
+\usepackage{bnf}
+\usepackage{tikz}
+\usepackage{enumerate}
+\usepackage{mathtext}
+\usepackage{mathtools}
+\usepackage{mathabx}
+%\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage{proof}
+%\usepackage{paracol}
+%\usepackage{enumitem}
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{minted}
+%\usepackage{hyperref}
+\usetikzlibrary{graphs}
+\usetikzlibrary{graphs.standard}
+\usetikzlibrary{automata,positioning}
+\usepackage{float}
+
+\begin{document}
+
+%\theoremstyle{dfn}
+\newtheorem{dfn}{Определение}[section]
+\newtheorem{nte}{Замечание}[section]
+
+\newtheorem{axiom}{Аксиома}[section]
+\newtheorem{thm}{Теорема}[section]
+\newtheorem{lmm}[theorem]{Лемма}
+\newtheorem{statement}{Утверждение}[section]
+\newtheorem{oun_paragraph}{Пункт}[section]
+\newtheorem{cons}{Следствие}[section]
+\newtheorem*{exm}{Пример}
+
+\newcommand{\comb}[1]{\operatorname{\bf{\textrm{#1}}}}
+\newcommand{\func}[1]{\operatorname{#1}}
+\newcommand{\reduction}[1]{{\color{OrangeRed}#1}}
+\newcommand{\set}[1]{\left\{#1\right\}}
+
+\def\from#1{\par \parbox{0.7\textwidth}{\par \hfill\raggedleft \it #1}} 
+
+\begin{frame}{}
+\begin{center}\Large Лекция 4.\\ \Large Унификация термов.\end{center}
+\end{frame}
+
+
+\begin{frame}{Задача реконструкции типа}
+\begin{dfn}Алгебраический терм $$\theta ::= x\:|\:(f\:\theta\:\ldots\:\theta)$$\end{dfn}\vspace{-0.3cm}
+\begin{dfn}Подстановка переменных --- функция $S_0: V \rightarrow T$, где $S_0(x) = x$ почти везде
+(за исключением конечного множества переменных).
+
+Подстановка: $S: T \rightarrow T$, что $S(x) = S_0(x)$, но $S(f\ \theta_1\ \dots \theta_k) = f\ S(\theta_1)\ \dots\ S(\theta_k)$
+$S(\Gamma) = \{ x : S(\tau_x)\ |\ x : \tau_x \in \Gamma\}$
+\end{dfn}
+
+\begin{dfn}Будем воспринимать запись типа как некоторое выражение в алгебраических термах, импликация --- единственный
+функциональный символ.
+Наиболее общей парой для задачи реконструкции типа $?\vdash M:?$ назовём такие $\langle \Gamma, \gamma \rangle$, что:
+\begin{enumerate}
+\item $\Gamma\vdash M:\gamma$
+\item Если $\Delta\vdash M:\delta$, то найдётся такая подстановка $S$, что $\Delta = S(\Gamma)$ и $\delta = S(\gamma)$.
+\end{enumerate}
+\end{dfn}
+
+\end{frame}
+
+\begin{frame}{Общий план решения}
+\begin{enumerate}
+\item Основа решения --- алгоритм унификации для системы уравнений в алгебраических термах.
+\item По терму $M$ строим систему уравнений в алгебраических термах.
+\item Наиболее общим унификатором системы будет является подстановка, из которой можно получить наиболее общую пару.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Система уравнений в алгебраических термах}
+	\begin{dfn}Система уравнений в алгебраических термах\end{dfn}
+	$$
+		\begin{cases}
+			\theta_1=\sigma_1&\\
+			\vdots&\\
+			\theta_n=\sigma_n&\\
+		\end{cases}
+	$$\par где $\theta_i \text{ и } \sigma_i-\text{термы}$\par
+\end{frame}
+
+\begin{frame}{Задача унификации}
+
+\begin{dfn}Решением задачи унификации для системы уравнений $\sigma_k = \tau_k$ назовём такую подстановку
+$S$, что $S(\sigma_k) = S(\tau_k)$.
+\end{dfn}
+\begin{dfn}Наиболее общим решением задачи унификации назовём такую подстановку $S$, что для любого
+другого решения $T$ найдётся подстановка $R$, что $T(\rho) = R(S(\rho))$.
+\end{dfn}
+\begin{dfn}Система в разрешённой форме --- каждое уравнение имеет вид $x_i = \theta_i$, причём
+каждый из $x_i$ входит в систему ровно один раз (является левой частью одного из уравнений)
+\end{dfn}
+\begin{dfn}Система несовместна --- система не имеет решений.\end{dfn}
+\end{frame}
+
+\begin{frame}{Алгоритм унификации}
+Пусть дана система уравнений $\sigma_i = \tau_i$. 
+Возьмём произвольное уравнение и попробуем проверить/применить одно из следующих условий/действий к нему:
+
+		\begin{enumerate}[(a)]
+		\item $\sigma_i=x$ если $\sigma_i$ не переменная перепишем как $x=\sigma_i$
+		\item $\sigma_i = \sigma_i$ удалим
+		\item $f\:\theta_1\hdots\theta_n=f\:\rho_1\hdots\rho_n$ заменим на $n$ уравнений $\theta_k = \rho_k$
+		\item если уравнение имеет вид $x=\tau_i$ и $x$ входит хотя бы в одно другое уравнение, то заменим все другие уравнения на $\sigma_k[x := \tau_i] = \tau_k[x := \tau_i]$
+		\item если уравнение имеет вид $x = f\ \dots x_i \dots$, система несовместна (occurrs check)
+		\item если уравнение имеет вид $f\ ... = g\ ...$ при $f \ne g$, система несовместна.
+		\end{enumerate}
+
+Если нет ни одного подходящего правила ни для одного уравнения --- закончим работу (система находится в разрешённой форме).
+\end{frame}
+
+\begin{frame}{Алгоритм всегда завершает работу}
+\begin{itemize}
+\item Рассмотрим $\langle x,y,z \rangle$,
+где:
+\begin{itemize}\item $x$ --- количество переменных, входящих в систему, которые входят не в разрешённом виде.
+Переменная $t$ входит в систему в разрешённом виде, если переменная входит в систему ровно один раз, причём входит в уравнение вида $t = \sigma$;
+\item $y$ --- количество функциональных символов в системе;
+\item $z$ --- количество уравнений типа $a=a$ и $\theta=b$, где $\theta$ не переменная.
+\end{itemize}
+\item Упорядочим тройки лексикографически (согласно порядковому типу $\omega^3$).
+
+\item Заметим, что операции $(a)$ и $(b)$ всегда уменьшают $z$ и иногда уменьшают $x$.
+Операция $(c)$ всегда уменьшает $y$, иногда $x$ и, возможно, увеличивает $z$.
+Операция $(d)$ всегда уменьшает $x$ и иногда увеличивает $y$. То есть, операции $(a)-(d)$ всегда уменьшают
+соответствующий ординал.
+
+\item Cогласно лемме из матлога любая строго убывающая последовательность ординалов имеет конечную длину.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Корректность алгоритма}
+\begin{thm}Для системы уравнений $\sigma_k = \tau_k$ алгоритм даёт наиболее общее решение, если оно существует.\end{thm}
+\begin{proof}
+\begin{itemize}
+\item Операции $(a)-(d)$ не меняют множества решений системы. За конечное время либо выполнится условие $(e)$ или $(f)$,
+либо будут исчерпаны правила.
+\item Условия $(e)$, $(f)$ очевидно означают несовместность системы (в т.ч. исходной).
+\item При отсутствии возможности применения правил и условий все уравнения имеют вид $x = \theta_x$,
+где $x$ входит в систему только один раз. Построим $S_0(x) = \theta_x$. 
+
+\item Если есть подстановка $T: T(\sigma_k) = T(\tau_k)$, тогда положим $R = \mathcal{U}(\{ S_0(x) = T_0(x)\ |\ x \ne T_0(x)\})$.
+Очевидно, $T(\zeta) = R(S(\zeta))$
+\end{itemize}
+\end{proof}
+\end{frame}
+
+%\begin{comment}
+\begin{frame}{Построение системы по терму $M$}
+Будем строить систему рекурсией по структуре терма $M$ (предполагаем, что все имена
+для связанных переменных уникальны). 
+Каждой переменной $x$ сопоставим свежую типовую переменную $\alpha_x$. Также каждой аппликации $P\ Q$ в терме сопоставим
+свежую типовую переменную $\beta_{PQ}$. 
+
+
+%В итоге получим $\langle \mathcal{E}, \sigma\rangle$, где $\mathcal{E}$ ---
+%система уравнений, а $\sigma$ --- тип терма $M$. 
+По терму $M$ и по всем его подтермам рекурсивно построим пару $\langle \mathcal{E}_M, \sigma_M\rangle$ так:
+
+%Учитывайте недостаток записи: здесь две разные переменные $\beta_{xx}$: $(x\ x)\ (x\ x)$
+
+$$\langle\mathcal{E}_M,\sigma_M\rangle := \left\{\begin{array}{ll}\langle \varnothing, \alpha_x\rangle, & M = x\\
+\langle \mathcal{E}_P, \alpha_x\rightarrow\sigma_P\rangle, & M = \lambda x.P\\
+\langle \mathcal{E}_P\cup\mathcal{E}_Q\cup\{\sigma_P = \sigma_Q\rightarrow\beta_{PQ}\}, \beta_{PQ}\rangle, 
+   & M = P\ Q
+\end{array}\right.$$
+
+\begin{thm} Если $S = \mathcal{U}(\mathcal{E}_M)$, то наиболее общим решением задачи типизации будет
+$\langle\{ x : S(\alpha_x)\ |\ x \in FV(M) \}, S(\sigma_M)\rangle$\end{thm}
+\begin{proof} Индукция по структуре $M$. \end{proof}
+\end{frame}
+
+\begin{comment}
+\begin{frame}{Пример вывода типов }
+\begin{enumerate}
+\item Выберем пример ($M = \lambda f.\lambda x.f\ (f\ x)$) и индуктивно составим систему:
+\begin{itemize}
+\item Для $f\ x$:\quad $\langle\{\alpha_f = \alpha_x\rightarrow\beta_{fx}\},\; \beta_{fx}\rangle$
+\item Для $f\ (f\ x)$:\quad $\langle\{\alpha_f = \alpha_x\rightarrow\beta_{fx}, \alpha_f = \beta_{fx}\rightarrow\beta_{ffx}\}, \beta_{ffx}\rangle$
+\item Для $\lambda x.f\ (f\ x)$:\quad $\langle\{\alpha_f = \alpha_x\rightarrow\beta_{fx}, \alpha_f = \beta_{fx}\rightarrow\beta_{ffx}\}, \alpha_x\rightarrow\beta_{ffx}\rangle$
+\item Для $\lambda f.\lambda x.f\ (f\ x)$:\quad $\langle\{\alpha_f = \alpha_x\rightarrow\beta_{fx}, \alpha_f = \beta_{fx}\rightarrow\beta_{ffx}\}, \alpha_f\rightarrow\alpha_x\rightarrow\beta_{ffx}\rangle$
+\end{itemize}
+\item Приводим систему к разрешённой форме:
+\begin{itemize}
+\item $\alpha_f = \alpha_x\rightarrow\beta_{fx}, \alpha_f = \beta_{fx}\rightarrow\beta_{ffx}$
+\item $\alpha_f = \alpha_x\rightarrow\beta_{fx}, \alpha_x\rightarrow\beta_{fx} = \beta_{fx}\rightarrow\beta_{ffx}$, правило $(d)$
+\item $\alpha_f = \alpha_x\rightarrow\beta_{fx}, \alpha_x = \beta_{fx}, \beta_{fx} = \beta_{ffx}$, правило $(c)$
+\item $\alpha_f = \beta_{fx}\rightarrow\beta_{fx}, \alpha_x = \beta_{fx}, \beta_{fx} = \beta_{ffx}$, правило $(d)$
+\item $\alpha_f = \beta_{ffx}\rightarrow\beta_{ffx}, \alpha_x = \beta_{ffx}, \beta_{fx} = \beta_{ffx}$, правило $(d)$
+\end{itemize}
+\item Строим функцию подстановки:
+$S_0(\alpha_f) = \beta_{ffx}\rightarrow\beta_{ffx}, S_0(\alpha_x) = S_0(\beta_{fx}) = \beta_{ffx}$
+\item Наиболее общая пара:
+$\langle \varnothing, S(\alpha_f\rightarrow\alpha_x\rightarrow\beta_{ffx})\rangle$, то есть
+$$\vdash \lambda f.\lambda x.f\ (f\ x) : (\beta_{ffx}\rightarrow\beta_{ffx})\rightarrow\beta_{ffx}\rightarrow\beta_{ffx}$$
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Проверка типа}
+\begin{enumerate}
+\item Задача реконструкции типа находит наиболее общую типизацию.
+\item Сведём задачу проверки $\Gamma\vdash M:\sigma$ к задаче реконструкции типа $?\vdash M:?$ и найдём $\langle \Gamma', \sigma' \rangle$.
+\item Проверим, является ли $\langle \Gamma, \sigma\rangle$ частным случаем $\langle \Gamma', \sigma' \rangle$.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Обитаемость типа}
+\begin{enumerate}
+\item Задача поиска $M$, что $\Gamma\vdash M:\sigma$.
+\item Эквивалентно поиску доказательства утверждения $\sigma$ в ИИП (разрешимо).
+\item По доказательству затем получим его краткую запись в виде терма.
+\end{enumerate}
+\end{frame}
+\end{comment}
+
+%\begin{frame}{Выразительная сила}
+%\begin{dfn}
+%Расширенный полином, где $P(x)$, $P(x,y)$ --- полиномы (выражения, составленные из сложения, умножения, аргументов и натуральных констант),
+%$c$ --- константа:
+%$$E(m,n) := \left\{\begin{array}{ll}
+%c,& m = 0, n = 0\\
+%P_1(m), & n=0\\
+%P_2(n), & m=0\\
+%P_3(m,n), & m>0, n>0
+%\end{array}\right.$$
+%\end{comment}
+
+\begin{frame}{Нормализуемость}
+\begin{dfn}
+\begin{itemize}
+\item Терм $A$ назовём слабо нормализуемым, если существует последовательность редукций,
+приводящих его в нормальную форму.
+\item Терм $A$ назовём сильно нормализуемым, если не существует бесконечной последовательности
+его редукций.
+\item Исчисление назовём сильно нормализуемым, если любой его терм сильно нормализуем.
+\end{itemize}
+\end{dfn}
+
+\vspace{-0.3cm}
+\begin{thm}Бестиповое лямбда-исчисление не является сильно нормализуемым\end{thm}
+\vspace{-0.3cm}
+\begin{proof}$\Omega \rightarrow_\beta \Omega$\end{proof}
+
+\begin{thm}Просто типизированное лямбда-исчисление является сильно нормализуемым\end{thm}
+\end{frame}
+
+\begin{comment}
+\begin{frame}{$SN_\sigma$: сильно нормализуемые термы типа $\sigma$}
+\begin{dfn} Будем записывать $SN_\alpha(T)$, если \begin{enumerate}
+\item $\vdash T : \alpha$
+\item $T$ сильно нормализуем.
+\end{enumerate}\vspace{0.5cm}
+
+$SN_{\sigma\rightarrow\tau}(T)$, если \begin{enumerate}
+\item $\vdash T : \sigma\rightarrow\tau$
+\item $T$ сильно нормализуем
+\item Если $SN_\sigma(P)$, то $SN_\tau(T\ P)$.
+Неформальное пояснение: функция гарантированно заканчивает работу на любых сильно нормализуемых аргументах.
+\end{enumerate}
+
+\end{dfn}
+\end{frame}
+
+\begin{frame}[fragile]{Пример 1}
+
+{\color{gray}$SN_\zeta(T)$, если:
+$\vdash T:\zeta$, $T$ сильно нормализуем, при $\zeta=\sigma\rightarrow\tau$ и $SN_\sigma(P)$
+выполнено $SN_\tau(T\ P)$
+}
+
+\begin{exm}
+$SN_{\alpha\rightarrow\alpha}(\lambda x.x)$:
+\begin{enumerate}
+\item $\vdash \lambda x.x : \alpha\rightarrow\alpha$
+\item $\lambda x.x$ находится в нормальной форме
+\item Каждой цепочке редукций $I\ P$ соответствует цепочка редукций $P$ длины $k-1$ или $k$
+(редукции внутри $P$ оставляем, редукцию $I\ Q \rightarrow_\beta Q$ пропускаем).
+Отсюда, если $SN_\alpha(P)$, то $I\ P$ сильно нормализуемо и $\vdash I\ P : \alpha$.
+\end{enumerate}
+\end{exm}
+\end{frame}
+
+\begin{frame}[fragile]{Пример 2}
+
+\begin{minipage}{10cm}{\color{gray}$SN_\zeta(T)$, если:\\
+ (1) $\vdash T:\zeta$, (2) $T$ сильно нормализуем, \\(3) при $\zeta=\sigma\rightarrow\tau$ и $SN_\sigma(P)$
+выполнено $SN_\tau(T\ P)$}
+\end{minipage}
+
+\begin{exm}
+Важность третьего условия: не обязательно результат подстановки сильно нормализуемого терма 
+в сильно нормализуемый терм сильно нормализуем.
+
+\begin{itemize}
+\item $\lambda x.x\ x$ сильно нормализуем.
+\item Бывает так: $(\lambda x.x\ x)\ I \rightarrow_\beta I\ I \rightarrow_\beta I$
+\item Но бывает и так: $(\lambda x.x\ x)\ (\lambda x.x\ x)$.
+\end{itemize}
+\end{exm}
+
+\end{frame}
+
+\begin{frame}
+\begin{thm}Если $\vdash S:\sigma$ и $S\rightarrow_\beta T$, то $SN_\sigma(S)$ тогда и только тогда, когда $SN_\sigma(T)$.\end{thm}
+\begin{proof}Лемма о редукции типа, индукция по структуре $\sigma$
+
+$(\lambda x.P) Q -> P [x:=Q]$
+Если $\sigma = \alpha$, то $SN_\alpha(T)$ означает, что 
+
+\end{proof}
+\end{frame}
+
+\begin{frame}{Применение типизированного терма к $SN$-аргументам само $SN$}
+Если $\{x_i : \sigma_i\} \vdash Q : \tau$ и $SN_{\sigma_i}(P_i)$, то $SN_\tau(Q[x_1 := P_1,\dots,x_n := P_n])$.
+Индукция по структуре доказательства $x_i : \sigma_i \vdash Q:\tau$.
+\begin{enumerate}
+\item $$\infer{\vdash x_k : \sigma_k}{\{x_i : \sigma_i\}}$$
+\item $$\infer{\Gamma\vdash M\ N : \psi}{\Gamma\vdash M : \varphi\rightarrow\psi\quad\quad N : \psi}$$
+По индукции, $SN_{\varphi\rightarrow\psi}(M[{x_i := P_i}])$. Также, по определению имеем $SN_{\varphi\rightarrow\psi}$.
+Отсюда $SN_\psi(M[{x_i := P_i}]\ N[{x_i := P_i}])$
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Типизированный терм является сильно нормализованым}
+\begin{thm}Если $\vdash T:\tau$, то $T сильно нормализуем.$\end{thm}
+\begin{proof}По вырожденному случаю леммы о применении типизированного терма $SN_\tau(T[])$ (при пустом списке замен).
+Тогда по определению $SN_\tau(T)$ имеем сильную нормализуемость $T$.\end{proof}
+\end{frame}
+\end{comment}
+
+\begin{frame}{Сильно нормализуемые множества}
+\begin{dfn}SN --- множество всех сильно нормализуемых лямбда-термов.
+
+Насыщенное множество $\mathcal{X} \subseteq SN$ --- такое, что: \begin{enumerate}
+\item для любых $n \ge 0$ и $M_1, \dots, M_n \in SN$ $$x\ M_1 \dots M_n \in \mathcal{X}$$
+\item для любых $n \ge 1$, $M_1, \dots, M_n \in SN$ и $N \in \Lambda$ $$N[x := M_1]\ M_2 \dots M_n \in \mathcal{X}\text{ влечёт }(\lambda x.N)\ M_1\ M_2\dots M_n \in \mathcal{X}$$
+\end{enumerate}
+\end{dfn}
+
+\vspace{-0.7cm}
+\begin{lmm}
+$SN$ --- насыщенное. 
+\end{lmm}
+Интересен пункт 2: если $N[x := M_1]\ M_2\dots M_n \in SN$, то $\underline{(\lambda x.N)\ M_1}\ M_2\dots M_n \in SN$. Подстановка подчёркнутого 
+возвращает к редукции посылки, бесконечная <<локальная>> подстановка может быть повторена с посылкой.
+\end{frame}
+
+\begin{frame}{}
+\begin{dfn}
+Если $\mathcal{A},\mathcal{B} \subseteq \Lambda$, то $\mathcal{A} \rightarrow \mathcal{B} = \{ X \in \Lambda\ |\ \forall Y \in \mathcal{A}\ .\ X\ Y \in \mathcal{B}\}$
+\end{dfn}
+
+\begin{exm}
+$\{ \lambda x.\lambda y.x \} \rightarrow \{ X\ |\ X =_\beta \lambda x.\lambda y.y \} = \{ Not, \lambda t.F, Xor\ T, \dots \}$
+\end{exm}
+
+\begin{dfn}
+$$\llbracket \sigma \rrbracket = \left\{\begin{array}{ll}SN, & \sigma = \alpha\\
+  \llbracket \tau_1 \rrbracket \rightarrow \llbracket \tau_2 \rrbracket, & \sigma = \tau_1 \rightarrow \tau_2\end{array}\right.$$
+\end{dfn}
+
+\begin{lmm}
+Если $\mathcal{A}, \mathcal{B}$ насыщены, то $\mathcal{A}\rightarrow\mathcal{B}$ насыщено\\
+$\llbracket\sigma\rrbracket$ насыщено.
+\end{lmm}
+
+\begin{lmm}$\llbracket\sigma\rrbracket\subseteq SN$\end{lmm}
+
+\end{frame}
+
+\begin{frame}{Оценка}
+\begin{dfn}
+Оценка $\rho: \mathcal{V} \rightarrow \Lambda$ --- отображение переменных в лямбда-термы.
+
+$M_\rho := M[x_1 := \rho(x_1), \dots, x_n := \rho(x_n)]$, где $x_i$ --- все свободные переменные $M$.
+
+Будем писать $\rho \models M:\sigma$, если $M_\rho \in \llbracket\sigma\rrbracket$.
+Будем писать $\rho \models \Gamma$, если $\rho(x) \in \llbracket\sigma\rrbracket$ для всех $x : \sigma \in \Gamma$.
+
+$\Gamma \models M:\sigma$, если для любой оценки $\rho$ из $\rho\models\Gamma$ следует $\rho \models M:\sigma$.
+\end{dfn}
+
+\begin{thm}$\Gamma\vdash M:\sigma$ влечёт $\Gamma\models M:\sigma$.
+\end{thm}
+
+Доказательство индукцией по структуре вывода $\Gamma\vdash M:\sigma$ со следующим разбором случаев.
+
+\end{frame}
+
+\begin{frame}{Аксиома}
+Вывод имеет вид:
+
+$$\infer{\Gamma, x : \sigma \vdash x:\sigma}{}$$
+
+Фиксируем $\rho \models \Gamma\cup\{x : \sigma\}$, тогда
+$x_\rho = \rho(x)\in\llbracket\sigma\rrbracket$
+
+Отсюда $\Gamma, x : \sigma \models x : \sigma$
+\end{frame}
+
+\begin{frame}{Применение}
+Вывод имеет вид:
+$$\infer{\Gamma\vdash M\ N:\tau}{\Gamma\vdash M:\sigma\rightarrow\tau\quad\quad\Gamma\vdash N:\sigma}$$
+Фиксируем $\rho \models \Gamma$. По индукционному предположению, $\Gamma\models M:\sigma\rightarrow\tau$ и
+$\Gamma\models N:\sigma$, так что $\rho\models M:\sigma\rightarrow\tau$ и $\rho\models N:\sigma$, что означает, что
+$M_\rho \in \llbracket\sigma\rrbracket\rightarrow\llbracket\tau\rrbracket$ и $N_\rho \in \llbracket\sigma\rrbracket$.
+Тогда $(M\ N)_\rho = M_\rho\ N_\rho \in \llbracket\tau\rrbracket$.
+\end{frame}
+\begin{frame}{Абстракция}
+Вывод имеет вид:
+$$\infer[x \notin FV(\Gamma)]{\Gamma\vdash\lambda x.M : \sigma\rightarrow\tau}{\Gamma,x:\sigma\vdash M:\tau}$$
+
+Пусть $\rho\models\Gamma$.
+Чтобы показать $(\lambda x.M)_\rho \in \llbracket\sigma\rightarrow\tau\rrbracket$, надо для всех $N \in \llbracket\sigma\rrbracket$
+показать $(\lambda x.M)_\rho\ N \in \llbracket\tau\rrbracket$.
+
+Фиксируем $N \in \llbracket\sigma\rrbracket$. Тогда $\rho^{x := N}\models\Gamma,x:\sigma$. 
+По индукционному предположению, $\Gamma,x:\sigma\models M:\tau$, так что $\rho^{x := N}\models M:\tau$ (по определению $\models$).
+То есть, $M_{\rho^{x := N}} \in \llbracket\tau\rrbracket$. Произведём редукцию:
+$$(\lambda x.M)_\rho N = (\lambda x.M)^{y_1 := \rho(y_1), \dots, y_n := \rho(y_n)}\ N \rightarrow_\beta M^{y_1 := \rho(y_1), \dots, y_n := \rho(y_n), x:=N}
+ = M_{\rho^{x := N}}$$
+
+Заметим, $N \in \llbracket \sigma \rrbracket \subseteq SN$ и $M_{\rho^{x := N}} \in \llbracket\tau\rrbracket$.
+Заметим ещё, что $M_{\rho^{x:=N}} = M_\rho[x := N]$.
+По определению насыщенного множества из $M_\rho[x := N] \in \llbracket\tau\rrbracket$ следует требуемое $(\lambda x.M)_\rho\ N \in \llbracket\tau\rrbracket$.
+\end{frame}
+\begin{frame}{Основная теорема}
+\begin{thm}$\Gamma\vdash M:\sigma$ влечёт $M \in SN$\end{thm}
+\begin{proof}
+По предыдущей теореме, $\Gamma\models M:\sigma$. Построим <<тождественную>> оценку, $\rho(x) = x$ для всех $x:\tau \in \Gamma$.
+
+Рассмотрим каждый $x : \tau$ из контекста.
+По лемме выше, $\llbracket\tau\rrbracket$ насыщенное. По определению насыщенного, $x \in \llbracket\tau\rrbracket$.
+Поэтому $\rho\models\Gamma$.
+
+Поскольку $\Gamma\models M:\sigma$, то $M = M_\rho \in \llbracket \sigma \rrbracket$. А по лемме выше, $\llbracket \sigma \rrbracket \subseteq SN$.
+\end{proof}
+\end{frame}
+%\end{comment}
+
+\begin{frame}{О свойстве сильной нормализуемости}
+
+Правило сечения в $S_\infty$ (без одной боковой формулы):
+$$\infer{\sigma}{\sigma\vee\neg\beta\quad\quad\beta}$$
+Или перепишем в привычной грамматике (подобно Modus Ponens):
+$$\infer{\sigma}{\beta\rightarrow\sigma\quad\quad\beta}$$
+И заметим нечто похожее в просто-типизированном лямбда-исчислении:
+$$\infer[\beta-\text{редекс}]{(\lambda x.P)\ Q:\sigma}{(\lambda x.P) : \tau\rightarrow\sigma\quad\quad Q:\tau}$$
+
+Поэтому добавим пункты к изоморфизму Карри-Ховарда:
+\begin{center}\begin{tabular}{l|l}
+Логика & $\lambda_\rightarrow$ \\\hline
+Правило сечения, M.P. & Бета-редекс\\
+Устранение сечения & Бета-редукция\\
+Теорема об устранении сечений & Нормализуемость
+\end{tabular}\end{center}
+
+\end{frame}
+
+
+\end{document}
