@@ -483,6 +483,42 @@ let rec add : 'a . 'a -> 'a bin_list -> 'a bin_list = fun elem lst -> match lst 
 сделайте это исключительно через индуктивные типы. Покажите, что если \verb!x : IndFin m! и \verb!y : IndFin n!,
 то \verb!x + y : IndFin (m + n)!.
 \end{enumerate}
+
+\item Рассмотрим следующее доказательство уникальности элементов списка:
+\begin{verbatim}
+\func not-member (A : \Type) (elem : A) (l : List A) : \Type \elim l
+  | nil => \Sigma
+  | :: hd tl => \Sigma (Not (hd = elem)) (not-member A elem tl)
+
+\func unique-list (A : \Type) (l : List A) : \Type \elim l
+  | nil => \Sigma
+  | :: hd tl => \Sigma (not-member A hd tl) (unique-list A tl)
+\end{verbatim}
+
+Докажем, что список $[0,1,2]$ состоит из уникальных элементов:
+\begin{verbatim}
+\func r-unique => unique-list Nat (0 :: 1 :: 2 :: nil)
+\func x : r-unique => ((contradiction, (contradiction, ())), ((contradiction, ()), ((), ())))
+\end{verbatim}
+
+\begin{enumerate} 
+\item Напишите функцию, строящую список \verb!b! натуральных чисел от 0 до n и доказательство\\ \verb!unique-list Nat b!.
+\item Покажите, что если $a_0 < a_1 < \dots < a_n$, то список $[a_0,a_1,\dots,a_n]$ уникальный.
+\item Покажите, что если $n \ge 2$ и $a_k \ne a_{k+1}$ при $0 \le k < n$, то необязательно, что список
+$[a_0,a_1,\dots,a_n]$ --- уникальный.
+\end{enumerate}
+
+\item Рассмотрим правый дальний нижний угол $\lambda$-куба ($\{(\star,\star);(\star,\square);(\square,\star)\}$).
+Можно предположить, что тогда в такой системе возможны и функции рода $f: \star\rightarrow\star$ 
+(как композиция функций $p: \star\rightarrow\alpha$ и $q: \alpha\rightarrow\star$ ---
+например, можно кодировать тип его именем, затем по имени типа восстанавливать сам тип обратно).
+Почему всё-таки такие функции в обобщённых типовых системах невозможны без четвёртого элемента $(\square,\square)$?
+
+\item Какова должна быть топология на множестве
+пар натуральных чисел (интуитивно мы будем понимать эти пары как рациональные числа, пары <<числитель-знаменатель>>), 
+чтобы непрерывными были бы те и только те функции, для которых выполнено $f(p,q) = f(p',q')$ для всех 
+таких $p,p',q$ и $q'$, что $p\cdot q' = p'\cdot q$. Напомним, что равенство мы понимаем как наличие непрерывного пути 
+между точками.
 \end{enumerate}
 
 \end{document}
