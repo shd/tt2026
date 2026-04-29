@@ -521,4 +521,152 @@ $[a_0,a_1,\dots,a_n]$ --- уникальный.
 между точками.
 \end{enumerate}
 
+\section*{Задание №5. Дополнительные задачи на доказательства. Равенство.}
+
+\begin{enumerate}
+
+\item Рассмотрим модуль числа, $|x|$.
+\begin{enumerate}
+\item Предложите определение этой конструкции (должна отображать \verb!Int! в \verb!Nat!). Докажите, что $||x|| = |x|$.
+\item Докажите, что если $x \ge 0$, то $|x|=x$.
+\item Докажите, что $|a - b| + |a + b| = 2\cdot\max(|a|,|b|)$.
+\end{enumerate}
+
+\item На практике было много вопросов по поводу доказательства 
+$\forall x\in\mathbb{N}.\forall y\in\mathbb{N}.x < y \rightarrow \neg\exists z\in\mathbb{N}.x = z\cdot y$.
+Рассмотрим несколько упражнений (дополнительных лемм), которые могут помочь в этом доказательстве.
+\begin{enumerate}
+\item Заметим, что это утверждение неверно при $x,y,z\in\mathbb{N}_0$.
+Поэтому, предложите контрпример и докажите его на языке Аренд.
+\item Рассмотрим деление с остатком, divmod:\\ 
+\verb!\divmod (a b : Nat) (b /= 0) => \Sigma (q r : Nat) (a = q * b + r) (r < b)!.
+Будем обозначать первый элемент пары (собственно деление) как $//$ (в стиле языка Питон).
+Докажите, что $a_1 // b \geq a_2 // b$, если $a_1 > a_2$.
+\item Докажите, что $a_1 // b > a_2 \div b$, если $a_1 \geq a_2 + b$.
+\item Докажите, что $a // b_1 \geq a \div b_2$, если $b_1 < b_2$.
+\item Докажите, что если $a_1 // b = a_2 // b$, то $|a_2 - a_1| < b$.
+\item Докажите, что если $(p1,q1,r1) = \texttt{divmod}\ a\ b$ и $(p2,q2,r2) = \texttt{divmod}\ a\ b$, то $p1=p2$ и $q1=q2$.
+\item Докажите, что если $a // b = 1$, то $a < 2b$ (ну, или $a = 1\cdot b + k, k < b$).
+\item Докажите, что если $a // b = 0$, то $a < b$ и $a\ \texttt{mod}\ b = a$.
+\item Докажите, что если $a < b$, то $a\ \texttt{mod}\ b = a$ и $a // b = 0$.
+\end{enumerate}
+
+\item Как вы помните из лекции, в языке Аренд существует иерархия вложенных типовых универсумов. Если в типе отсутствует
+упоминание \verb!\Type!, то данный тип принадлежит универсуму 0. Однако, если в типе упоминается \verb!\Type k!,
+то тип принадлежит универсумам, не меньшим $k+1$. Уровень универума обозначается специальным ключевым словом \verb!\lp!.
+Над индексами можно проводить простые операции и сопоставление с образцом (\verb!\suc\lp!). Более подробно
+можно это прочесть в документации по языку Аренд:
+
+\url{https://arend-lang.github.io/documentation/tutorial/PartI/universes.html}
+%\begin{enumerate}
+%\item Определите функцию \verb!\id!, возвращающую 
+%\end{enumerate}
+
+Рассмотрим определения:
+\begin{verbatim}
+\func ChurchT (x : \Type) => (x -> x) -> (x -> x)
+\func Church => \Pi (x : \Type) -> ChurchT x
+\func Zero : Church => \lam t f x => x
+
+\func incT (t : \Type) (n : ChurchT t) => \lam f x => n f (f x)
+\func pair_plus (type : \Type) (pair : \Sigma (ChurchT type) (ChurchT type)) :
+  \Sigma (ChurchT type) (ChurchT type) => (pair.2, incT type pair.2)
+\func dec (n : Church) : Church => \lam (t : \Type) =>
+    (n (\Sigma (ChurchT t) (ChurchT t)) (pair_plus t) (Zero t, Zero t)).1
+\func sub (a : Church (\suc\lp)) (b : Church) => a (Church \lp) dec b
+\end{verbatim}
+
+Определите, развивая определения выше:
+\begin{enumerate}
+\item Операцию умножения.
+\item Операцию <<деление на три>> (естественно, в версии, не использующей $Y$-комбинатор).
+\item Операцию возведения в степень, определявшуюся как $\lambda m.\lambda n.n\ m$.
+\item Деление.
+\item Вычисление факториала.
+\end{enumerate}
+
+\item Введём тип данных \verb!IsEven!:
+
+\begin{verbatim}
+\data IsEven (n : Nat) \elim n
+  | 0 => zero-is-even
+  | (suc (suc k)) => next-next (IsEven k)
+\end{verbatim}
+
+Доказать, что этот тип является утверждением, можно например так:
+
+\begin{verbatim}
+\func all-even-different (n : Nat) (a b : IsEven n) : a = b \elim n, a, b
+  | 0, zero-is-even, zero-is-even => idp
+  | suc (suc n), next-next a, next-next b => pmap next-next (all-even-different n a b)
+
+\func is-even-isProp (n : Nat) : isProp (IsEven n) => all-even-different n
+\end{verbatim}
+
+Обратите внимание: по переменным $n$, $a$ и $b$ производится \emph{элиминация}, то есть множество 
+значений переменных разбивается на фрагменты (в соответствии с конструкторами типа данных), 
+и доказательство утверждения проводится независимо для каждого фрагмента; 
+в частности, цель доказательства изменяется и просходит замена переменных $a$ и $b$ на сопоставляемые
+варианты (вместо ожидаемого типа \verb!a = b! мы ожидаем тип \verb!zero-is-even = zero-is-even!, и т.п.).
+Сравните с лекцией про элиминаторы, каждый из вариантов --- тело отдельной функции-элиминатора. 
+
+Чтобы воспроизвести тот же эффект в конструкции \verb!\case!, нужно указывать ключевое слово 
+\verb!\elim! перед каждой элиминируемой переменной: 
+\begin{verbatim}
+\case \elim n, \elim a, \elim b \with { ... }
+\end{verbatim}
+
+Полный код, определяющий тип \verb!IsEven! (вместе с доказательством того, что тип --- утверждение),
+выглядит так:
+
+\begin{verbatim}
+\data IsEven (n : Nat) \elim n
+  | 0 => zero-is-even
+  | (suc (suc k)) => next-next (IsEven k)
+  \where {
+    \func all-even-different ... -- скопируйте код функции сюда
+    \use \level is-even-isProp (n : Nat) : isProp (IsEven n) => all-even-different n
+  }
+\end{verbatim}
+
+Однако, незавершённым остаётся доказательство разрешимости типа \verb!IsEven n!. Восполните лакуны:
+
+\begin{verbatim}
+\func even-is-dec (a : Nat) : Dec (IsEven a) \elim a
+  | 0 => yes zero-is-even
+  | 1 => no {?}
+  | suc (suc a) => {?}
+\end{verbatim}
+
+\item Справедливости ради, в предыдущем задании компилятор сам может догадаться, что \verb!IsEven! --- утверждение.
+Но далеко не для всех типов это очевидно, и тогда функция с префиксом \verb!\use \level! становится необходимой.
+Например, в следующем типе <<простое число>> данная функция должна доказать, что любые два значения типа при данном $x$ равны:
+
+\begin{verbatim}
+\data Div3 (x : Nat)
+  | remainder-zero (Exists (p : Nat) (p Nat.* 3 = x))
+  | remainder-one (Exists (p : Nat) (p Nat.* 3 Nat.+ 1 = x))
+  | remainder-two (Exists (p : Nat) (p Nat.* 3 Nat.+ 2 = x))
+  \where \use \level levelProp {x : Nat} (a b : Div3 x) : a = b => {?}
+\end{verbatim}
+
+\begin{enumerate}
+\item Замените \verb!{?}! в тексте выше на корректное доказательство.
+\item Определите функцию, которая бы по $x$ и значению $\exists p q.3 \cdot p + q = x \with 0 \le q < 3$ возвращала бы \verb!Div3 x!
+(понятно, можно разделить $x$ на 3, но нам уже результат деления дали вторым аргументом --- задача в том, чтобы им воспользоваться).
+\item Постройте аналогичный тип \verb!Prime x! для простых чисел --- с тремя вариантами \verb!less-than-two!, \verb!is-prime!, 
+\verb!is-composite! --- и определите функцию, строящую по числу значение данного типа.
+\item Покажите, что в типе \verb!Prime (x*x + 2*x + 1)! всегда (кроме граничных случаев) обитает вариант \verb!is-composite!.
+\item Покажите, что в типе 
+\begin{verbatim}
+\data SuperDec (P : \Prop)
+| sure P
+| nope (P -> Empty)
+| neither ((P || (P -> Empty)) -> Empty)
+\where \use \level superDecProp {P : \Prop} (a b : SuperDec P): a = b => {?}
+\end{verbatim}
+вариант \verb!neither! невозможен (также, заполните пропущенное доказательство \verb!superDecProp!).
+\end{enumerate}
+\end{enumerate}
+
 \end{document}
